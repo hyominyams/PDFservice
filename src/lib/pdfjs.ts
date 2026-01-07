@@ -21,12 +21,20 @@ export async function getPdfJs(): Promise<PdfJsModule> {
         workerPort?: unknown;
       };
       const workerUrl = "/pdfjs/pdf.worker.mjs";
-      // Use module worker to avoid classic-worker execution errors.
-      workerOptions.workerPort =
-        typeof window !== "undefined"
-          ? new Worker(workerUrl, { type: "module" })
-          : null;
-      workerOptions.workerSrc = workerUrl;
+      try {
+        if (typeof window !== "undefined" && typeof Worker !== "undefined") {
+          workerOptions.workerPort = new Worker(workerUrl, { type: "module" });
+          workerOptions.workerSrc = workerUrl;
+        } else {
+          workerOptions.workerPort = null;
+          workerOptions.workerSrc = undefined;
+        }
+      } catch (err) {
+        // Fallback: disable external worker, let PDF.js use fake worker (main thread).
+        console.warn("PDF.js worker failed; falling back to inline worker", err);
+        workerOptions.workerPort = null;
+        workerOptions.workerSrc = undefined;
+      }
       return mod;
     });
   }
