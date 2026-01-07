@@ -20,8 +20,13 @@ export async function getPdfJs(): Promise<PdfJsModule> {
         workerSrc?: string;
         workerPort?: unknown;
       };
-      workerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
-      workerOptions.workerPort = null;
+      const workerUrl = "/pdfjs/pdf.worker.mjs";
+      // Use module worker to avoid classic-worker execution errors.
+      workerOptions.workerPort =
+        typeof window !== "undefined"
+          ? new Worker(workerUrl, { type: "module" })
+          : null;
+      workerOptions.workerSrc = workerUrl;
       return mod;
     });
   }
